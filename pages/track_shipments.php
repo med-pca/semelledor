@@ -1,54 +1,31 @@
 <?php
 session_start();
-
-<?php
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['manual_close']) && isset($_SESSION['logged_in'])) {
-    $pdo->prepare("UPDATE orders SET order_status = 'Clôturée' WHERE id = ?")->execute([$order_id]);
-    $order['order_status'] = 'Clôturée';
-}
-?>
-
-if (!isset($_SESSION['logged_in']) && !isset($_SESSION['supplier_logged_in'])) {
+if (!isset($_SESSION['supplier_logged_in']) && !isset($_SESSION['logged_in'])) {
     header('Location: ../index.php');
     exit;
 }
 include '../db.php';
 
-$order_id = $_GET['order_id'] ?? null;
-if (!$order_id) {
-    echo "Order ID missing."; exit;
-}
-
+$order_id = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
 $order = $pdo->query("SELECT * FROM orders WHERE id = $order_id")->fetch();
+
 if (!$order) {
-    echo "Commande non trouvée."; exit;
+    echo "<div class='container mt-5 alert alert-danger'>❌ Commande introuvable.</div>";
+    exit;
 }
 
-$shipments = $pdo->query("SELECT * FROM shipments WHERE order_id = $order_id ORDER BY shipment_date ASC")->fetchAll();
+$shipments = $pdo->prepare("SELECT * FROM shipments WHERE order_id = ?");
+$shipments->execute([$order_id]);
+$all = $shipments->fetchAll();
 
-$sent = ['size_40_2' => 0, 'size_41_2' => 0, 'size_42_2' => 0, 'size_43_2' => 0, 'size_44_2' => 0, 'size_45_2' => 0];
-foreach ($shipments as $s) {
-    foreach ($sent as $size => $_) {
-        $sent[$size] += (int)$s[$size];
+$totalEnvoye = 0;
+foreach ($all as $s) {
+    foreach (['40','41','42','43','44','45'] as $size) {
+        $totalEnvoye += (int)($s['size_' . $size . '_2'] ?? 0);
     }
 }
-
-$qty_total = (int)$order['qty_total'];
-$per_size_target = $qty_total / count($sent);
-$remaining = [];
-$completed = true;
-
-foreach ($sent as $size => $qte) {
-    $remaining[$size] = max(0, $per_size_target - $qte);
-    if ($remaining[$size] > 0) {
-        $completed = false;
-    }
-}
-
-if ($completed && count($shipments) > 0 && $order['order_status'] !== 'Complétée') {
-    $pdo->prepare("UPDATE orders SET order_status = 'Complétée' WHERE id = ?")->execute([$order_id]);
-    $order['order_status'] = 'Complétée';
-}
+$reste = $order['qty_total'] - $totalEnvoye;
+$badgeClass = $reste <= 0 ? 'success' : 'warning';
 ?>
 <!DOCTYPE html>
 <html>
@@ -57,82 +34,75 @@ if ($completed && count($shipments) > 0 && $order['order_status'] !== 'Complét�
     <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
 </head>
 <body class='container mt-5'>
-<?php if (isset($_GET['shipment']) && $_GET['shipment'] === 'ok'): ?>
-<div class='alert alert-success'>📦 L'envoi a bien été enregistré et le statut mis à jour automatiquement.</div>
-<?php endif; ?>
-    <h3>Suivi des envois - Commande #<?= $order['id'] ?> (<?= $order['model'] ?>)</h3>
-    <p>Status : <strong><?= $order['order_status'] ?></strong></p>
-<?php if ($order['order_status'] === 'Complétée'): ?>
-<?php if (isset($_SESSION['logged_in'])): ?>
-<form method="POST" class="mt-3">
-    <button name="manual_close" class="btn btn-outline-dark">✅ Confirmer la clôture manuelle</button>
-</form>
-<?php endif; ?>
-<div class='alert alert-success'>✅ Cette commande a été automatiquement marquée comme <strong>complétée</strong> car toutes les tailles ont été envoyées.</div>
-<?php endif; ?>
+<h3>Suivi des envois - Commande #<?= $order['id'] ?></h3>
+<?php $return_url = isset($_SESSION['logged_in']) ? 'orders.php' : '../supplier_dashboard.php'; ?>
+<a href='<?= $return_url ?>' class='btn btn-secondary mb-3'>⬅ Retour</a>
 
-    <h5>Quantités envoyées / restantes</h5>
-    
-
-<?php
-// Résumé des quantités envoyées vs attendues
-$order = $pdo->query("SELECT * FROM orders WHERE id = $order_id")->fetch();
-$expected = (int)$order['qty_total'];
-
-$sent = 0;
-foreach ($pdo->query("SELECT * FROM shipments WHERE order_id = $order_id") as $s) {
-    foreach (['40','41','42','43','44','45'] as $size) {
-        $sent += (int)$s['size_' . $size];
-    }
-}
-$reste = $expected - $sent;
-
-$badge_class = $reste <= 0 ? 'success' : 'warning';
-?>
 <div class='alert alert-info'>
-    👟 <strong>Quantité totale attendue :</strong> <?= $expected ?> <br>
-    🚚 <strong>Total envoyé :</strong> <span class='badge bg-primary'><?= $sent ?></span> <br>
-    📦 <strong>Reste à envoyer :</strong> <span class='badge bg-<?= $badge_class ?>'><?= $reste ?></span>
+    🧤 <strong>Total attendu :</strong> <?= $order['qty_total'] ?> <br>
+    🚚 <strong>Total envoyé :</strong> <span class='badge bg-primary'><?= $totalEnvoye ?></span> <br>
+    📦 <strong>Reste :</strong> <span class='badge bg-<?= $badgeClass ?>'><?= $reste ?></span>
 </div>
 
+<?php if (isset($_GET['shipment']) && $_GET['shipment'] === 'ok'): ?>
+    <div class='alert alert-success'>📦 Envoi bien enregistré et statut mis à jour automatiquement.</div>
+<?php endif; ?>
 
+<?php if (count($all) === 0): ?>
+    <div class='alert alert-warning'>Aucun envoi trouvé pour cette commande.</div>
+<?php else: ?>
 <table class='table table-bordered'>
-        <thead><tr>
-            <th>Taille</th><th>Envoyée</th><th>Restante</th>
-        </tr></thead>
-        <tbody>
-            <?php foreach ($sent as $size => $qty): ?>
-            <tr>
-                <td><?= str_replace('_', '.', substr($size, 5)) ?></td>
-                <td><?= $qty ?></td>
-                <td><?= $remaining[$size] ?></td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-
-    <h5>Historique des envois</h5>
-    <table class='table table-striped'>
-        <thead>
-            <tr><th>Date</th><th>Carton</th><th>Poids</th><th>Transport (€)</th><th>Commentaire</th></tr>
-        </thead>
-        <tbody>
-            <?php foreach ($shipments as $s): ?>
-            <tr>
-                <td><?= $s['shipment_date'] ?></td>
-                <td><?= $s['code_carton'] ?></td>
-                <td><?= $s['poids_total'] ?> kg</td>
-                <td><?= $s['transport_cost'] ?></td>
-                <td><?= $s['commentaire'] ?></td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-
-    <?php if (isset($_SESSION['supplier_logged_in'])): ?>
-    <a class='btn btn-secondary mt-3' href='../supplier_dashboard.php'>Retour</a>
-    <?php else: ?>
-    <a class='btn btn-secondary mt-3' href='orders.php'>Retour</a>
+    <thead>
+        <tr>
+            <th>Date</th><th>Code colis</th><th>Poids</th><th>Frais</th><th>Tailles</th><th>Images</th>
+        <td>
+    <?php if (!empty($shipment['photo_carton'])): ?>
+        <div class='mb-1'>
+            📦 <a href="../uploads/<?= $shipment['photo_carton'] ?>" target="_blank">
+                <img src="../uploads/<?= $shipment['photo_carton'] ?>" style="width:60px; height:auto;" alt="Carton">
+            </a>
+        </div>
     <?php endif; ?>
+    <?php if (!empty($shipment['recu_transport'])): ?>
+        <div>
+            🧾 <a href="../uploads/<?= $shipment['recu_transport'] ?>" target="_blank">
+                <img src="../uploads/<?= $shipment['recu_transport'] ?>" style="width:60px; height:auto;" alt="Reçu">
+            </a>
+        </div>
+    <?php endif; ?>
+</td></tr>
+    </thead>
+    <tbody>
+        <?php foreach ($all as $shipment): ?>
+        <tr>
+            <td><?= $shipment['created_at'] ?? '-' ?></td>
+            <td><?= $shipment['tracking_code'] ?? '-' ?></td>
+            <td><?= $shipment['poids_total'] ?? 0 ?> kg</td>
+            <td><?= $shipment['transport_cost'] ?? 0 ?> MAD</td>
+            <td>
+                <?php foreach (['40','41','42','43','44','45'] as $size): ?>
+                    <?= $size ?>: <?= $shipment['size_' . $size . '_2'] ?? 0 ?>&nbsp;
+                <?php endforeach; ?>
+            </td>
+        <td>
+    <?php if (!empty($shipment['photo_carton'])): ?>
+        <div class='mb-1'>
+            📦 <a href="../uploads/<?= $shipment['photo_carton'] ?>" target="_blank">
+                <img src="../uploads/<?= $shipment['photo_carton'] ?>" style="width:60px; height:auto;" alt="Carton">
+            </a>
+        </div>
+    <?php endif; ?>
+    <?php if (!empty($shipment['recu_transport'])): ?>
+        <div>
+            🧾 <a href="../uploads/<?= $shipment['recu_transport'] ?>" target="_blank">
+                <img src="../uploads/<?= $shipment['recu_transport'] ?>" style="width:60px; height:auto;" alt="Reçu">
+            </a>
+        </div>
+    <?php endif; ?>
+</td></tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
+<?php endif; ?>
 </body>
 </html>
