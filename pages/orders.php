@@ -190,6 +190,8 @@ function getFlagImg($country) {
                     <a class='btn btn-sm btn-danger' href='delete_order.php?id=<?= $order['id'] ?>' onclick="return confirm('Supprimer cette commande ?')">Supprimer</a>
                     <a class='btn btn-sm btn-success' href='add_shipment.php?order_id=<?= $order['id'] ?>'>Envoi</a>
                     <a class='btn btn-sm btn-info' href='track_shipments.php?order_id=<?= $order['id'] ?>'>Suivi</a>
+                    <a class='btn btn-sm btn-secondary' href='export_order_pdf.php?id=<?= $order['id'] ?>' target='_blank'>PDF</a>
+
                     <form method="post" action="orders.php" style="margin-top:5px;">
                         <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
                         <input type="number" name="montant" class="form-control form-control-sm" placeholder="💰 Paiement" required>

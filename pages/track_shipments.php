@@ -106,3 +106,48 @@ $badgeClass = $reste <= 0 ? 'success' : 'warning';
 <?php endif; ?>
 </body>
 </html>
+
+
+<?php
+$paiements = $pdo->prepare("SELECT * FROM paiements WHERE order_id = ?");
+$paiements->execute([$order['id']]);
+$paiements = $paiements->fetchAll();
+?>
+
+<?php if (count($paiements) > 0): ?>
+    
+<div class="alert alert-info mt-4">
+    💰 <strong>Total commande :</strong> <?= $order['prix_total'] ?> MAD |
+    ✅ <strong>Payé :</strong> <?= $order['montant_paye'] ?> MAD |
+    ❗ <strong>Reste :</strong> <span class="text-danger"><?= $order['reste'] ?> MAD</span>
+</div>
+
+
+    <h5 class="mt-4">💵 Paiements reçus :</h5>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Montant</th>
+                <th>Reçu</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($paiements as $p): ?>
+            <tr>
+                <td><?= date('d/m/Y H:i', strtotime($p['date_paiement'])) ?></td>
+                <td><?= $p['montant'] ?> MAD</td>
+                <td>
+                    <?php if ($p['recu_image']): ?>
+                        <a href="../uploads/<?= $p['recu_image'] ?>" target="_blank">
+                            <img src="../uploads/<?= $p['recu_image'] ?>" width="80">
+                        </a>
+                    <?php else: ?>
+                        -
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+<?php endif; ?>

@@ -70,6 +70,46 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+    <?php
+$paiements = $pdo->prepare("SELECT * FROM paiements WHERE order_id = ?");
+$paiements->execute([$order['id']]);
+$paiements = $paiements->fetchAll();
+?>
+
+<?php if (count($paiements) > 0): ?>
+    <h5 class="mt-4">💵 Paiements enregistrés :</h5>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Montant</th>
+                <th>Reçu</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($paiements as $p): ?>
+            <tr>
+                <td><?= date('d/m/Y H:i', strtotime($p['date_paiement'])) ?></td>
+                <td><?= $p['montant'] ?> MAD</td>
+                <td>
+                    <?php if ($p['recu_image']): ?>
+                        <a href="../uploads/<?= $p['recu_image'] ?>" target="_blank">
+                            <img src="../uploads/<?= $p['recu_image'] ?>" width="80">
+                        </a>
+                    <?php else: ?>
+                        -
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <div class="mb-4">
+        <a href='add_paiement.php?order_id=<?= $order["id"] ?>' class='btn btn-outline-primary'>➕ Ajouter un paiement</a>
+    </div>
+
+<?php endif; ?>
+
     <h3>Modifier commande #<?= $order['id'] ?></h3>
     <?php if ($order['image_model']): ?>
         <div class="mb-3">
@@ -78,7 +118,12 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
     <?php endif; ?>
 
-    <form method='POST'>
+    
+    <div class='mb-3'>
+        <a href='add_paiement.php?order_id=<?= $order["id"] ?>' class='btn btn-outline-primary'>➕ Ajouter un paiement</a>
+    </div>
+    
+<form method='POST'>
         <label>Date de commande :</label>
         <input class='form-control mb-2' type='date' name='date_commande' value='<?= $order['date_commande'] ?>' required>
 
