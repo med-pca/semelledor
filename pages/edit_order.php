@@ -161,7 +161,9 @@ $paiements = $paiements->fetchAll();
         <input class='form-control mb-2' type='number' step='0.01' name='other_fees' value='<?= $order['other_fees'] ?>'>
 
         <label>Prix total (MAD) :</label>
-        <input class='form-control mb-2' type='number' step='0.01' name='prix_total' value='<?= $order['prix_total'] ?>'>
+        <div class="form-control mb-2" style="background-color: #e9ecef;">
+            <?= $order['prix_unit']*$order['qty_total'] + $order['other_fees'] ?> MAD
+        </div>
 
         <label>Montant payé (MAD) :</label>
         <input class='form-control mb-2' type='number' step='0.01' name='montant_paye' value='<?= $order['montant_paye'] ?>'>

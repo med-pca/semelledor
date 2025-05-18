@@ -40,16 +40,7 @@ if (isset($_GET['action']) && isset($_GET['id']) && is_numeric($_GET['id'])) {
     }
 }
 
-$orders = $pdo->query("SELECT * FROM orders 
-    WHERE order_status IN (
-        'En attente du fournisseur',
-        'Prix en attente de validation',
-        'Prix validé – production en cours',
-        'En préparation',
-        'Commande prête à l\'envoi',
-        'En attente de validation finale'
-    ) 
-    ORDER BY id DESC")->fetchAll();
+$orders = $pdo->query("SELECT * FROM orders ORDER BY id DESC")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html>
@@ -100,7 +91,7 @@ $orders = $pdo->query("SELECT * FROM orders
                     <a class='btn btn-sm btn-warning' href='supplier_dashboard.php?action=start_production&id=<?= $order['id'] ?>'>📦 Marquer comme en préparation</a>
                 <?php elseif ($order['order_status'] === 'En préparation'): ?>
                     <a class='btn btn-sm btn-dark' href='supplier_dashboard.php?action=ready_to_ship&id=<?= $order['id'] ?>'>🚚 Prête à l'envoi</a>
-                <?php elseif ($order["order_status"] === "Commande prête à l'envoi"): ?>
+                <?php elseif ($order["order_status"] === "Commande prête à l'envoi" || $order["order_status"] === "Expédiée partiellement"): ?>
                     <a class='btn btn-sm btn-primary' href='pages/add_shipment.php?order_id=<?= $order['id'] ?>'>Ajouter un envoi</a>
                     <a class='btn btn-sm btn-info' href='pages/track_shipments.php?order_id=<?= $order['id'] ?>'>Voir envois</a>
                     <a class='btn btn-sm btn-outline-success' href='supplier_dashboard.php?action=done_signal&id=<?= $order['id'] ?>'>✅ Informer que tout est prêt</a>

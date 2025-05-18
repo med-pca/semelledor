@@ -13,20 +13,58 @@ if (!$order) {
     die("Commande introuvable.");
 }
 
+// Calculer qtyRemaining (avant POST) pour affichage form
+$sqlOrder = "SELECT size_40_2, size_41_2, size_42_2, size_43_2, size_44_2, size_45_2 FROM orders WHERE id = ?";
+$stmtOrder = $pdo->prepare($sqlOrder);
+$stmtOrder->execute([$order_id]);
+$orderSizes = $stmtOrder->fetch(PDO::FETCH_ASSOC);
+
+$sqlShipment = "
+    SELECT 
+        SUM(size_40_2) AS size_40_prepared,
+        SUM(size_41_2) AS size_41_prepared,
+        SUM(size_42_2) AS size_42_prepared,
+        SUM(size_43_2) AS size_43_prepared,
+        SUM(size_44_2) AS size_44_prepared,
+        SUM(size_45_2) AS size_45_prepared
+    FROM shipments
+    WHERE order_id = ?";
+$stmtShipment = $pdo->prepare($sqlShipment);
+$stmtShipment->execute([$order_id]);
+$shipmentSizes = $stmtShipment->fetch(PDO::FETCH_ASSOC);
+
+
+$qtyRemaining = [];
+foreach (['40','41','42','43','44','45'] as $size) {
+    $ordered = isset($orderSizes['size_'.$size.'_2']) ? (int)$orderSizes['size_'.$size.'_2'] : 0;
+    $prepared = isset($shipmentSizes['size_'.$size.'_prepared']) ? (int)$shipmentSizes['size_'.$size.'_prepared'] : 0;
+    $qtyRemaining[$size] = max(0, $ordered - $prepared);
+}
+
+
+// Traitement POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $code = $_POST['tracking_code'] ?? '';
-    $weight = $_POST['poids_total'] ?? 0;
-    $shipping_cost = $_POST['transport_cost'] ?? 0;
+    $weight = isset($_POST['poids_total']) && is_numeric($_POST['poids_total']) ? (float)$_POST['poids_total'] : 0.0;
+    $shipping_cost = isset($_POST['transport_cost']) && is_numeric($_POST['transport_cost']) ? (float)$_POST['transport_cost'] : 0.0;
+
     $sizes = [];
     $qty_sent = 0;
 
     foreach (['40','41','42','43','44','45'] as $size) {
-        $val = (int)($_POST['size_' . $size] ?? 0);
+        $val = isset($_POST['size_' . $size]) && is_numeric($_POST['size_' . $size]) ? (int)$_POST['size_' . $size] : 0;
+
+        // Validation : ne pas dépasser qtyRemaining côté serveur
+        if ($val > $qtyRemaining[$size]) {
+            die("Erreur : la quantité pour la taille $size dépasse la quantité restante.");
+        }
+
         $sizes[$size] = $val;
         $qty_sent += $val;
     }
 
-    // Upload images
+    // Upload images (idem)
+
     $photo_carton = '';
     $recu_transport = '';
 
@@ -54,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $photo_carton, $recu_transport
     ]);
 
-    // Statut auto
+    // Mise à jour statut
     $sh = $pdo->prepare("SELECT * FROM shipments WHERE order_id = ?");
     $sh->execute([$order_id]);
     $all = $sh->fetchAll();
@@ -98,10 +136,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <h5>Quantités par taille :</h5>
     <div class='row'>
-        <?php foreach (['40','41','42','43','44','45'] as $size): ?>
+        <?php foreach (['40','41','42','43','44','45'] as $size): 
+            $maxQty = $qtyRemaining[$size] ?? 0;
+        ?>
         <div class='col'>
             <label><?= $size ?></label>
-            <input type='number' min='0' name='size_<?= $size ?>' class='form-control' value='0'>
+            <input 
+                type='number' min='0' max='<?= $maxQty ?>' 
+                name='size_<?= $size ?>' class='form-control' 
+                value='0'
+                <?= $maxQty === 0 ? "disabled" : "" ?>
+            >
+            <small>Quantité restante : <?= $maxQty ?></small>
         </div>
         <?php endforeach; ?>
     </div>

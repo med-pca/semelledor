@@ -24,6 +24,26 @@ function getFlagImg($country) {
     $key = str_replace(" ", "", $normalized);
     return isset($map[$key]) ? "<img src='flags/" . $map[$key] . "' alt='$country' style='width:20px; height:auto; margin-right:5px;'> " : '';
 }
+
+
+    $paiements = $pdo->prepare("SELECT * FROM paiements WHERE order_id = ?");
+    $paiements->execute([$order['id']]);
+    $paiements = $paiements->fetchAll();
+
+    $paiements_stmt = $pdo->prepare("SELECT SUM(montant) AS total_montant FROM paiements WHERE order_id = ?");
+    $paiements_stmt->execute([$order['id']]);
+    $paiement_total = $paiements_stmt->fetchColumn();
+
+    if ($paiement_total === null) {
+        $paiement_total = 0;
+    }
+
+    $total_order_without_fees = $order['qty_total'] * $order['prix_unit'];
+
+    $total_order = $total_order_without_fees + $order['other_fees'];
+
+    $reste_order = $total_order - $paiement_total;
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -47,22 +67,60 @@ function getFlagImg($country) {
         <li class='list-group-item'><strong>Modèle :</strong> <?= $order['model'] ?> | <strong>Couleur :</strong> <?= $order['color'] ?></li>
         <li class='list-group-item'>
             <strong>Quantités :</strong><br>
-            40: <?= $order['size_40_2'] ?>,
-            41: <?= $order['size_41_2'] ?>,
-            42: <?= $order['size_42_2'] ?>,
-            43: <?= $order['size_43_2'] ?>,
-            44: <?= $order['size_44_2'] ?>,
+            40: <?= $order['size_40_2'] ?><br>
+            41: <?= $order['size_41_2'] ?><br>
+            42: <?= $order['size_42_2'] ?><br>
+            43: <?= $order['size_43_2'] ?><br>
+            44: <?= $order['size_44_2'] ?><br>
             45: <?= $order['size_45_2'] ?> <br>
-            <strong>Total :</strong> <?= $order['qty_total'] ?>
+            <strong>Total des tailles :</strong> <?= $order['qty_total'] ?>
         </li>
         <li class='list-group-item'><strong>Prix unitaire :</strong> <?= $order['prix_unit'] ?> MAD</li>
-        <li class='list-group-item'><strong>Total :</strong> <?= $order['prix_total'] ?> MAD</li>
+        <li class='list-group-item'><strong>Total sans frais :</strong> <?= $total_order_without_fees ?> MAD</li>
         <li class='list-group-item'><strong>Frais autres :</strong> <?= $order['other_fees'] ?> MAD | <strong>Transport :</strong> <?= $order['total_transport'] ?> MAD</li>
-        <li class='list-group-item'><strong>Montant payé :</strong> <?= $order['montant_paye'] ?> MAD | <strong>Reste :</strong> <?= $order['reste'] ?> MAD</li>
+        
         <li class='list-group-item'><strong>Statut :</strong> <?= $order['order_status'] ?></li>
         <?php if (!empty($order['admin_note'])): ?>
         <li class='list-group-item text-info'><strong>Note de l'admin :</strong> <?= $order['admin_note'] ?></li>
         <?php endif; ?>
     </ul>
+
+
+<div class="alert alert-info mt-4">
+    💰 <strong>Total commande :</strong> <?= $total_order ?> MAD |
+    ✅ <strong>Payé :</strong> <?= $paiement_total ?> MAD |
+    ❗ <strong>Reste :</strong> <span class="text-danger"><?= $reste_order ?> MAD</span>
+</div>
+
+<?php if (count($paiements) > 0): ?>
+    <h5 class="mt-4">📎 Paiements reçus :</h5>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Montant</th>
+                <th>Reçu</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($paiements as $p): ?>
+            <tr>
+                <td><?= date('d/m/Y H:i', strtotime($p['date_paiement'])) ?></td>
+                <td><?= $p['montant'] ?> MAD</td>
+                <td>
+                    <?php if ($p['recu_image']): ?>
+                        <a href="uploads/<?= $p['recu_image'] ?>" target="_blank">
+                            <img src="uploads/<?= $p['recu_image'] ?>" width="80">
+                        </a>
+                    <?php else: ?>
+                        -
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+<?php endif; ?>
+
 </body>
 </html>

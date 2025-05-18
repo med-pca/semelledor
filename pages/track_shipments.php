@@ -117,9 +117,9 @@ $paiements = $paiements->fetchAll();
 <?php if (count($paiements) > 0): ?>
     
 <div class="alert alert-info mt-4">
-    💰 <strong>Total commande :</strong> <?= $order['prix_total'] ?> MAD |
+    💰 <strong>Total commande :</strong> <?= $order['prix_total']+ $order['other_fees'] ?> MAD |
     ✅ <strong>Payé :</strong> <?= $order['montant_paye'] ?> MAD |
-    ❗ <strong>Reste :</strong> <span class="text-danger"><?= $order['reste'] ?> MAD</span>
+    ❗ <strong>Reste :</strong> <span class="text-danger"><?= $order['reste'] + $order['other_fees'] ?> MAD</span>
 </div>
 
 

@@ -19,6 +19,7 @@ if (!$order) {
 
 // traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    /*
     $prix_unit = $_POST['prix_unit'];
     $other_fees = $_POST['other_fees'] ?? 0;
     $total_transport = $_POST['total_transport'] ?? 0;
@@ -27,6 +28,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $update = $pdo->prepare("UPDATE orders SET prix_unit = ?, other_fees = ?, total_transport = ?, prix_total = ?, order_status = 'Prix en attente de validation' WHERE id = ?");
     $update->execute([$prix_unit, $other_fees, $total_transport, $prix_total, $order_id]);
+    */
+
+
+    $prix_unit = isset($_POST['prix_unit']) && is_numeric($_POST['prix_unit']) ? $_POST['prix_unit'] : 0.0;
+    $other_fees = isset($_POST['other_fees']) && is_numeric($_POST['other_fees']) ? $_POST['other_fees'] : 0.0;
+    $total_transport = isset($_POST['total_transport']) && is_numeric($_POST['total_transport']) ? $_POST['total_transport'] : 0.0;
+
+    $qty_total = $order['qty_total'] ?? 0;
+    $prix_total = $prix_unit * $qty_total;
+
+    $update = $pdo->prepare("UPDATE orders SET prix_unit = ?, other_fees = ?, total_transport = ?, prix_total = ?, order_status = 'Prix en attente de validation' WHERE id = ?");
+    $update->execute([$prix_unit, $other_fees, $total_transport, $prix_total, $order_id]);
+
 
     header("Location: supplier_dashboard.php?updated=1");
     exit;

@@ -22,10 +22,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_POST['size_43_2'], $_POST['size_44_2'], $_POST['size_45_2']
     ]);
 
+
+    $totalQty = isset($totalQty) ? $totalQty : 0;
+
+    $prix_unit = is_numeric($_POST['prix_unit']) ? $_POST['prix_unit'] : 0.0;
+    $other_fees = is_numeric($_POST['other_fees']) ? $_POST['other_fees'] : 0.0;
+    $prix_total = is_numeric($_POST['prix_total']) ? $_POST['prix_total'] : 0.0;
+    $montant_paye = is_numeric($_POST['montant_paye']) ? $_POST['montant_paye'] : 0.0;
+    $total_transport = is_numeric($_POST['total_transport']) ? $_POST['total_transport'] : 0.0;
+    $reste = is_numeric($_POST['reste']) ? $_POST['reste'] : 0.0;
+
+    $status = 'En attente du fournisseur';
+    $imagePath = $imagePath ?? null; // si défini plus haut
+
+    $size_40_2 = is_numeric($_POST['size_40_2']) ? $_POST['size_40_2'] : 0;
+    $size_41_2 = is_numeric($_POST['size_41_2']) ? $_POST['size_41_2'] : 0;
+    $size_42_2 = is_numeric($_POST['size_42_2']) ? $_POST['size_42_2'] : 0;
+    $size_43_2 = is_numeric($_POST['size_43_2']) ? $_POST['size_43_2'] : 0;
+    $size_44_2 = is_numeric($_POST['size_44_2']) ? $_POST['size_44_2'] : 0;
+    $size_45_2 = is_numeric($_POST['size_45_2']) ? $_POST['size_45_2'] : 0;
+
+
     $stmt = $pdo->prepare("INSERT INTO orders 
         (date_commande, request, country, model, color, qty_total, prix_unit, other_fees, prix_total, montant_paye, total_transport, reste, order_status, image_model,
          size_40_2, size_41_2, size_42_2, size_43_2, size_44_2, size_45_2)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    
+
+    $stmt->execute([
+        $date_commande, $request, $country, $model, $color, $totalQty, $prix_unit,
+        $other_fees, $prix_total, $montant_paye, $total_transport, $reste,
+        $status, $imagePath,
+        $size_40_2, $size_41_2, $size_42_2,
+        $size_43_2, $size_44_2, $size_45_2
+    ]);
+
+    /*
     $stmt->execute([
         $_POST['date_commande'], $_POST['request'], $_POST['country'], $_POST['model'],
         $_POST['color'], $totalQty, $_POST['prix_unit'], $_POST['other_fees'],
@@ -34,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_POST['size_40_2'], $_POST['size_41_2'], $_POST['size_42_2'],
         $_POST['size_43_2'], $_POST['size_44_2'], $_POST['size_45_2']
     ]);
+    */
     header("Location: orders.php");
 }
 ?>

@@ -22,8 +22,9 @@ include '../db.php';
 
 // Résumé financier
 $totaux = $pdo->query("SELECT 
-    SUM(prix_total) AS total_global, 
-    SUM(montant_paye) AS total_paye, 
+    SUM(qty_total * prix_unit) AS total_global,
+    (SELECT SUM(montant) FROM paiements) AS total_paye, 
+    SUM(other_fees) AS total_frais,
     SUM(reste) AS reste_a_payer 
 FROM orders")->fetch();
 
@@ -79,8 +80,9 @@ $orders_stmt->execute($params);
 $orders = $orders_stmt->fetchAll();
 
 $totaux_stmt = $pdo->prepare("SELECT 
-    SUM(prix_total) AS total_global, 
-    SUM(montant_paye) AS total_paye, 
+    SUM(qty_total * prix_unit) AS total_global, 
+    (SELECT SUM(montant) FROM paiements) AS total_paye,
+    SUM(other_fees) AS total_frais,
     SUM(reste) AS reste_a_payer 
 FROM orders $where");
 $totaux_stmt->execute($params);
@@ -147,10 +149,15 @@ function getFlagImg($country) {
 </form>
 
 <div class='alert alert-info'>
-        💰 <strong>Total à payer :</strong> <?= $totaux['total_global'] ?? 0 ?> MAD |
-        ✅ <strong>Payé :</strong> <?= $totaux['total_paye'] ?? 0 ?> MAD |
-        ❗ <strong>Reste :</strong> <span class='text-danger'><?= $totaux['reste_a_payer'] ?? 0 ?> MAD</span>
-    </div>
+    💰 <strong>Total à payer :</strong> <?= 
+        ( ($totaux['total_global'] ?? 0) + ($totaux['total_frais'] ?? 0) ) 
+    ?> MAD |
+    ✅ <strong>Payé :</strong> <?= $totaux['total_paye'] ?? 0 ?> MAD |
+    ❗ <strong>Reste :</strong> <span class='text-danger'><?= 
+        ( ($totaux['total_global'] ?? 0) + ($totaux['total_frais'] ?? 0) ) - ($totaux['total_paye'] ?? 0)
+    ?> MAD</span>
+</div>
+
 
     <a href='order_form.php' class='btn btn-primary mb-3'>➕ Nouvelle commande</a>
     <a href='../logout.php' class='btn btn-danger mb-3'>Déconnexion</a>
