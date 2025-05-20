@@ -77,6 +77,7 @@ $paiements = $paiements->fetchAll();
 ?>
 
 <?php if (count($paiements) > 0): ?>
+    <?php include_once 'header.php'; ?>
     <h5 class="mt-4">💵 Paiements enregistrés :</h5>
     <table class="table table-bordered">
         <thead>
@@ -123,7 +124,7 @@ $paiements = $paiements->fetchAll();
         <a href='add_paiement.php?order_id=<?= $order["id"] ?>' class='btn btn-outline-primary'>➕ Ajouter un paiement</a>
     </div>
     
-<form method='POST'>
+    <form method='POST'>
         <label>Date de commande :</label>
         <input class='form-control mb-2' type='date' name='date_commande' value='<?= $order['date_commande'] ?>' required>
 
@@ -131,10 +132,10 @@ $paiements = $paiements->fetchAll();
         <input class='form-control mb-2' type='text' name='request' value='<?= $order['request'] ?>'>
 
         <label>Pays :</label>
-<select class='form-control mb-2' name='country' required>
-    <option value='cotedivoire' <?= $order['country'] == 'Cote dIvoire' ? 'selected' : '' ?>>cotedivoire</option>
-    <option value='Guinée' <?= $order['country'] == "Guinée" ? 'selected' : '' ?>>Guinée</option>
-</select>'>
+        <select class='form-control mb-2' name='country' required>
+            <option value='cotedivoire' <?= $order['country'] == 'Cote dIvoire' ? 'selected' : '' ?>>cotedivoire</option>
+            <option value='Guinée' <?= $order['country'] == "Guinée" ? 'selected' : '' ?>>Guinée</option>
+        </select>'>
 
         <label>Modèle :</label>
         <input class='form-control mb-2' type='text' name='model' value='<?= $order['model'] ?>'>
@@ -175,17 +176,17 @@ $paiements = $paiements->fetchAll();
         <input class='form-control mb-2' type='number' step='0.01' name='reste' value='<?= $order['reste'] ?>'>
 
         
-<label>Statut de la commande :</label>
-<select name='order_status' class='form-control mb-2'>
-    <option value='En attente du fournisseur' <?= $order['order_status'] == 'En attente du fournisseur' ? 'selected' : '' ?>>En attente du fournisseur</option>
-    <option value='Prix en attente de validation' <?= $order['order_status'] == 'Prix en attente de validation' ? 'selected' : '' ?>>Prix en attente de validation</option>
-    <option value='Prix validé – production en cours' <?= $order['order_status'] == 'Prix validé – production en cours' ? 'selected' : '' ?>>Prix validé – production en cours</option>
-    <option value='En préparation' <?= $order['order_status'] == 'En préparation' ? 'selected' : '' ?>>En préparation</option>
-    <option value="Commande prête à l'envoi" <?= $order['order_status'] == "Commande prête à l'envoi" ? 'selected' : '' ?>>Commande prête à l'envoi</option>
-    <option value='Expédiée partiellement' <?= $order['order_status'] == 'Expédiée partiellement' ? 'selected' : '' ?>>Expédiée partiellement</option>
-    <option value='Expédiée complètement' <?= $order['order_status'] == 'Expédiée complètement' ? 'selected' : '' ?>>Expédiée complètement</option>
-    <option value='Clôturée' <?= $order['order_status'] == 'Clôturée' ? 'selected' : '' ?>>Clôturée</option>
-</select>
+        <label>Statut de la commande :</label>
+        <select name='order_status' class='form-control mb-2'>
+            <option value='En attente du fournisseur' <?= $order['order_status'] == 'En attente du fournisseur' ? 'selected' : '' ?>>En attente du fournisseur</option>
+            <option value='Prix en attente de validation' <?= $order['order_status'] == 'Prix en attente de validation' ? 'selected' : '' ?>>Prix en attente de validation</option>
+            <option value='Prix validé – production en cours' <?= $order['order_status'] == 'Prix validé – production en cours' ? 'selected' : '' ?>>Prix validé – production en cours</option>
+            <option value='En préparation' <?= $order['order_status'] == 'En préparation' ? 'selected' : '' ?>>En préparation</option>
+            <option value="Commande prête à l'envoi" <?= $order['order_status'] == "Commande prête à l'envoi" ? 'selected' : '' ?>>Commande prête à l'envoi</option>
+            <option value='Expédiée partiellement' <?= $order['order_status'] == 'Expédiée partiellement' ? 'selected' : '' ?>>Expédiée partiellement</option>
+            <option value='Expédiée complètement' <?= $order['order_status'] == 'Expédiée complètement' ? 'selected' : '' ?>>Expédiée complètement</option>
+            <option value='Clôturée' <?= $order['order_status'] == 'Clôturée' ? 'selected' : '' ?>>Clôturée</option>
+        </select>
 
 
         <button class='btn btn-success'>Enregistrer</button>

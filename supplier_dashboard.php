@@ -17,6 +17,14 @@ function getFlagImg($country) {
     return isset($map[$key]) ? "<img src='flags/" . $map[$key] . "' alt='$country' style='width:20px; height:auto; margin-right:5px;'> " : '';
 }
 
+
+$totaux = $pdo->query("SELECT 
+    SUM(qty_total * prix_unit) AS total_global,
+    (SELECT SUM(montant) FROM paiements) AS total_paye, 
+    SUM(other_fees) AS total_frais,
+    SUM(reste) AS reste_a_payer 
+FROM orders")->fetch();
+
 // handle button actions
 if (isset($_GET['action']) && isset($_GET['id']) && is_numeric($_GET['id'])) {
     $orderId = (int)$_GET['id'];
@@ -56,8 +64,23 @@ $orders = $pdo->query("SELECT * FROM orders ORDER BY id DESC")->fetchAll();
 <?php if (isset($_GET['updated'])): ?>
     <div class='alert alert-success'>✅ Statut mis à jour avec succès.</div>
 <?php endif; ?>
+<?php include_once 'pages/header.php'; ?>
 
-<h3>Bienvenue <?= $_SESSION['supplier_username'] ?></h3>
+
+
+
+<div class='alert alert-info'>
+    💰 <strong>Total à payer :</strong> <?= 
+        ( ($totaux['total_global'] ?? 0) + ($totaux['total_frais'] ?? 0) ) 
+    ?> MAD |
+    ✅ <strong>Payé :</strong> <?= $totaux['total_paye'] ?? 0 ?> MAD |
+    ❗ <strong>Reste :</strong> <span class='text-danger'><?= 
+        ( ($totaux['total_global'] ?? 0) + ($totaux['total_frais'] ?? 0) ) - ($totaux['total_paye'] ?? 0)
+    ?> MAD</span>
+</div>
+
+
+
 <h5>Commandes en cours</h5>
 
 <div class='row'>
@@ -80,7 +103,13 @@ $orders = $pdo->query("SELECT * FROM orders ORDER BY id DESC")->fetchAll();
                     45: <?= $order['size_45_2'] ?> <br>
                     <strong>Total :</strong> <?= $order['qty_total'] ?>
                 </p>
-                <p><strong>Statut :</strong> <?= $order['order_status'] ?></p>
+                <p>
+               <h4> <span class='badge bg-<?php 
+                    echo str_contains($order['order_status'], 'partiellement') ? "warning" : (
+                         str_contains($order['order_status'], 'complètement') ? "success" : (
+                         str_contains($order['order_status'], 'attente') ? "secondary" : "info")); 
+                    ?>'><?= $order['order_status'] ?></span></h4>
+            </p>
                 <?php if (!empty($order['admin_note'])): ?>
                     <div class='alert alert-info'><strong>Note de l'admin :</strong> <?= $order['admin_note'] ?></div>
                 <?php endif; ?>

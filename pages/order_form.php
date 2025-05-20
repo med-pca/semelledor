@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $totalQty = isset($totalQty) ? $totalQty : 0;
 
+
     $prix_unit = is_numeric($_POST['prix_unit']) ? $_POST['prix_unit'] : 0.0;
     $other_fees = is_numeric($_POST['other_fees']) ? $_POST['other_fees'] : 0.0;
     $prix_total = is_numeric($_POST['prix_total']) ? $_POST['prix_total'] : 0.0;
@@ -43,6 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $size_45_2 = is_numeric($_POST['size_45_2']) ? $_POST['size_45_2'] : 0;
 
 
+
+
     $stmt = $pdo->prepare("INSERT INTO orders 
         (date_commande, request, country, model, color, qty_total, prix_unit, other_fees, prix_total, montant_paye, total_transport, reste, order_status, image_model,
          size_40_2, size_41_2, size_42_2, size_43_2, size_44_2, size_45_2)
@@ -50,7 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
 
     $stmt->execute([
-        $date_commande, $request, $country, $model, $color, $totalQty, $prix_unit,
+        $_POST['date_commande'], $_POST['request'], $_POST['country'], $_POST['model'],
+        $_POST['color'], $totalQty, $prix_unit,
         $other_fees, $prix_total, $montant_paye, $total_transport, $reste,
         $status, $imagePath,
         $size_40_2, $size_41_2, $size_42_2,
@@ -108,6 +112,8 @@ document.addEventListener("DOMContentLoaded", function () {
     sizeInputs.forEach(input => input.addEventListener('input', updateTotalPrice));
 });
 </script>
+
+<?php include_once 'header.php'; ?>
 
     <h3>Nouvelle commande</h3>
     <form method='POST' enctype='multipart/form-data'>

@@ -112,16 +112,36 @@ $badgeClass = $reste <= 0 ? 'success' : 'warning';
 $paiements = $pdo->prepare("SELECT * FROM paiements WHERE order_id = ?");
 $paiements->execute([$order['id']]);
 $paiements = $paiements->fetchAll();
+
+
+$paiements = $pdo->prepare("SELECT * FROM paiements WHERE order_id = ?");
+    $paiements->execute([$order['id']]);
+    $paiements = $paiements->fetchAll();
+
+    $paiements_stmt = $pdo->prepare("SELECT SUM(montant) AS total_montant FROM paiements WHERE order_id = ?");
+    $paiements_stmt->execute([$order['id']]);
+    $paiement_total = $paiements_stmt->fetchColumn();
+
+    if ($paiement_total === null) {
+        $paiement_total = 0;
+    }
+
+    $total_order_without_fees = $order['qty_total'] * $order['prix_unit'];
+
+    $total_order = $total_order_without_fees + $order['other_fees'];
+
+    $reste_order = $total_order - $paiement_total;
+
 ?>
+
+<div class="alert alert-info mt-4">
+    💰 <strong>Total commande :</strong> <?=  number_format($total_order, 2, ',', ' ') . ' MAD';  ?> |
+    ✅ <strong>Payé :</strong> <?=  number_format($paiement_total, 2, ',', ' ') . ' MAD';  ?> |
+    ❗ <strong>Reste :</strong> <span class="text-danger"><?=  number_format($reste_order, 2, ',', ' ') . ' MAD';  ?></span>
+</div>
 
 <?php if (count($paiements) > 0): ?>
     
-<div class="alert alert-info mt-4">
-    💰 <strong>Total commande :</strong> <?= $order['prix_total']+ $order['other_fees'] ?> MAD |
-    ✅ <strong>Payé :</strong> <?= $order['montant_paye'] ?> MAD |
-    ❗ <strong>Reste :</strong> <span class="text-danger"><?= $order['reste'] + $order['other_fees'] ?> MAD</span>
-</div>
-
 
     <h5 class="mt-4">💵 Paiements reçus :</h5>
     <table class="table table-bordered">

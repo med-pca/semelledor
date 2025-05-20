@@ -14,7 +14,7 @@ $options = [
 
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
-    echo "Success: A proper connection to MySQL was made.<br>";
+    //echo "Success: A proper connection to MySQL was made.<br>";
 } catch (PDOException $e) {
     echo "Connection failed: " . $e->getMessage();
 }

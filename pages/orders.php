@@ -75,9 +75,23 @@ if ($from && $to) {
     $params = [$to];
 }
 
-$orders_stmt = $pdo->prepare("SELECT * FROM orders $where ORDER BY id DESC");
+$orders_stmt = $pdo->prepare("
+    SELECT 
+        o.*, 
+        COALESCE(SUM(p.montant), 0) AS total_paye
+    FROM 
+        orders o
+    LEFT JOIN 
+        paiements p ON o.id = p.order_id
+    $where
+    GROUP BY 
+        o.id
+    ORDER BY 
+        o.id DESC
+");
 $orders_stmt->execute($params);
 $orders = $orders_stmt->fetchAll();
+
 
 $totaux_stmt = $pdo->prepare("SELECT 
     SUM(qty_total * prix_unit) AS total_global, 
@@ -90,7 +104,9 @@ $totaux = $totaux_stmt->fetch();
 
 
 function getFlagImg($country) {
-    $normalized = strtolower(trim(str_replace(['’', "'", "`"], "", $country)));
+    $normalized = strtolower(trim(str_replace(['’', "'", ""], "", $country)));
+    //$normalized = strtolower(trim(str_replace(['’', "'", ""], "", $country ?? '')));
+
     $normalized = str_replace(["côte", "cote"], "cote", $normalized);
     $map = [
         "cotedivoire" => 'civ.png',
@@ -110,6 +126,7 @@ function getFlagImg($country) {
     </style>
 </head>
 <body class='container mt-5'>
+    <?php include_once 'header.php'; ?>
     <h3>Liste des commandes</h3>
 
     <form method="get" class="row mb-4">
@@ -166,7 +183,7 @@ function getFlagImg($country) {
         <thead>
             <tr>
                 <th>Image</th><th>ID</th><th>Date</th><th>Client</th><th>Pays</th><th>Modèle</th>
-                <th>Quantité</th><th>Payé</th><th>Reste</th><th>Statut</th><th>Actions</th>
+                <th>Quantité</th><th>Montant Total</th><th>Charges</th><th>Payé</th><th>Reste</th><th>Statut</th><th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -185,8 +202,10 @@ function getFlagImg($country) {
                 <td><?= getFlagImg($order['country']) ?><?= $order['country'] ?></td>
                 <td><?= $order['model'] ?></td>
                 <td><?= $order['qty_total'] ?></td>
-                <td><?= $order['montant_paye'] ?></td>
-                <td><?= $order['reste'] ?></td>
+                <td><?= $order['qty_total'] * $order['prix_unit'] ?></td>
+                <td><?=  $order['other_fees'] ?></td>
+                <td><?= $order['total_paye'] ?> MAD</td>
+                <td><?= $order['qty_total'] * $order['prix_unit'] + $order['other_fees'] - $order['total_paye']  ?> MAD</td>
                 <td><span class='badge bg-<?php 
         echo str_contains($order['order_status'], 'partiellement') ? "warning" : (
              str_contains($order['order_status'], 'complètement') ? "success" : (
